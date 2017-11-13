@@ -2397,14 +2397,23 @@ def modularize(final):
   src = open(final).read()
   final = final + '.modular.js'
   f = open(final, 'w')
-  f.write('''var %(EXPORT_NAME)s = function(%(EXPORT_NAME)s) {
-  %(EXPORT_NAME)s = %(EXPORT_NAME)s || {};
-  var Module = %(EXPORT_NAME)s; // included code may refer to Module (e.g. from file packager), so alias it
+  f.write('''var %(EXPORT_NAME)s = (function() {
+  var scriptSrc;
+  if (typeof document === 'object' && typeof document.currentScript === 'object') {
+    scriptSrc = document.currentScript.src;
+  }
 
-%(src)s
+  return function(%(EXPORT_NAME)s) {
+    %(EXPORT_NAME)s = %(EXPORT_NAME)s || {};
+    %(EXPORT_NAME)s.currentScriptUrl = %(EXPORT_NAME)s.currentScriptUrl || scriptSrc;
 
-  return %(EXPORT_NAME)s;
-};
+    var Module = %(EXPORT_NAME)s; // included code may refer to Module (e.g. from file packager), so alias it
+
+  %(src)s
+
+    return %(EXPORT_NAME)s;
+  };
+})();
 // Export the function if this is for Node (or similar UMD-style exporting), otherwise it is lost.
 if (typeof module === "object" && module.exports) {
   module['exports'] = %(EXPORT_NAME)s;
